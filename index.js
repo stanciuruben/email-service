@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const config = require('config');
+const transporter = require('./lib/transporter');
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -20,8 +21,18 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Routes ------------------------------------------
-app.post('/', (req, res) => {
-	res.send('works');
+app.post('/', async (req, res) => {
+	const status = await transporter.sendMail({
+		from: config.get('mailAddress'),
+		to: config.get('mailReceiver'),
+		subject: `Website contact from ${req.body.name} <${req.body.email}>`,
+		text: req.body.message
+	});
+
+	if (status.accepted.includes(config.get('mailReceiver'))) {
+		return res.send(true);
+	}
+	return res.json(false);
 });
 
 // Listen ------------------------------------------
